@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: "12345678"   # Senha do root
+      MYSQL_DATABASE: matrizcurricular   # Banco de dados inicial
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"  # Permitir senha vazia (opcional)
+    ports:
+      - "3306:3306"  # Expor a porta do MySQL
+    volumes:
+      - db_data:/var/lib/mysql  # Volume para persistir os dados
+    restart: always
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend  # Caminho para o diretório do back-end
+      dockerfile: Dockerfile  # Dockerfile do back-end
+    container_name: backend
+    ports:
+      - "8080:8080"  # Expor a porta 8080 para o back-end
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/matrizcurricular  # Conectar ao banco MySQL
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: "12345678"
+    depends_on:
+      - db  # O back-end depende do MySQL
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend  # Caminho para o diretório do front-end
+      dockerfile: Dockerfile  # Dockerfile do front-end
+    container_name: frontend
+    ports:
+      - "3000:3000"  # Expor a porta 3000 para o front-end
+    volumes:
+      - ./frontend:/app  # Montar o código-fonte para desenvolvimento
+    networks:
+      - app-network
+    environment:
+      CHOKIDAR_USEPOLLING: "true"  # Forçar o watch do webpack em alguns sistemas de arquivos Docker
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:  # Volume para persistir os dados do MySQL
